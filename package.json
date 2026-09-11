@@ -1,0 +1,17 @@
+{
+  "name": "lenses-ppx-monorepo",
+  "private": true,
+  "description": "Monorepo for lenses-ppx (PPX + demo)",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w demo",
+    "build:ppx": "npm run build -w lenses-ppx",
+    "watch": "npm run watch -w demo",
+    "clean": "npm run clean -w demo"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  }
+}
