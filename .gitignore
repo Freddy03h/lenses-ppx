@@ -28,5 +28,9 @@ node_modules
 /ppx
 _esy
 _build
+_opam
 lenses-ppx.install
 _release
+*.res.js
+.rescript
+lib

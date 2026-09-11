@@ -8,116 +8,72 @@ on:
         required: false
 
 jobs:
-  build_linux:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        node_version: [14]
-
+  build-linux:
+    runs-on: ubuntu-latest
     container:
-      image: cichocinski/docker-esy:alpine3.8
-
+      image: ocaml/opam:alpine-3.20-ocaml-4.14
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2-beta
-        with:
-          node-version: ${{ matrix.node_version }}
+      - uses: actions/checkout@v4
 
-      - run: esy install
+      - name: Install dependencies and build static binary
         working-directory: packages/ppx
+        run: |
+          opam install . --deps-only -y
+          opam exec -- dune build --profile static
+          cp _build/default/bin/bin.exe "$GITHUB_WORKSPACE/ppx-linux-x64.exe"
 
-      - run: esy release-static
-        working-directory: packages/ppx
-
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}
-          path: packages/ppx/_build/default/bin/bin.exe
+          name: linux-x64
+          path: ppx-linux-x64.exe
 
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        node_version: [14]
-        os: [macOS-latest, windows-latest]
-
+  build-macos:
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v2-beta
+      - uses: ocaml/setup-ocaml@v3
         with:
-          node-version: ${{ matrix.node_version }}
-          
-      - run: npm i -g esy
-      - run: esy install
-        working-directory: packages/ppx
+          ocaml-compiler: 4.14.2
 
-      - run: esy build
+      - name: Build
         working-directory: packages/ppx
+        run: |
+          opam install . --deps-only -y
+          opam exec -- dune build
+          cp _build/default/bin/bin.exe "$GITHUB_WORKSPACE/ppx-osx-arm64.exe"
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}
-          path: packages/ppx/_build/default/bin/bin.exe
+          name: macos-arm64
+          path: ppx-osx-arm64.exe
 
   release:
-    needs: [build, build_linux]
+    needs: [build-linux, build-macos]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          persist-credentials: false
+      - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
-          name: macOS-latest
-          path: packages/darwin
+          name: macos-arm64
+          path: artifacts
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
-          name: ubuntu-latest
-          path: packages/linux
+          name: linux-x64
+          path: artifacts
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/setup-node@v4
         with:
-          name: windows-latest
-          path: packages/windows
-
-      - uses: actions/setup-node@v2-beta
-        with:
-          node-version: "14"
+          node-version: "22"
           registry-url: https://registry.npmjs.org/
-      
-      - run: mkdir -p $GITHUB_WORKSPACE/tarball
-      - run: |
-          cd packages/ppx
-          npm version patch
 
-      - run: |
-          cd packages/ppx
-          cp package.json $GITHUB_WORKSPACE/tarball
-          cp postinstall.js $GITHUB_WORKSPACE/tarball
-
-      - run: |
-          cd packages
-          cp darwin/bin.exe $GITHUB_WORKSPACE/tarball/darwin
-          cp linux/bin.exe $GITHUB_WORKSPACE/tarball/linux
-          cp windows/bin.exe $GITHUB_WORKSPACE/tarball/win32
-
-      - run: |
-          cd $GITHUB_WORKSPACE/tarball
-          npm publish $(npm pack | tail -1) --access public
+      - name: Pack and publish
+        working-directory: packages/ppx
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-
-      - run: |
-          git config --global user.email "github-actions@github.com" 
-          git config --global user.name "github-actions[bot]"
-          git commit --message "Update package.json" --all
-
-      - uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+        run: |
+          cp ../../artifacts/ppx-osx-arm64.exe .
+          cp ../../artifacts/ppx-linux-x64.exe .
+          npm publish --access public
