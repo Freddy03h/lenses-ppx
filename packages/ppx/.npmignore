@@ -9,4 +9,3 @@ dune-workspace
 lenses-ppx.opam
 *.ml
 *.mli
-*.re
