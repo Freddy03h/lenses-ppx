@@ -7,7 +7,7 @@ module StateLenses = %lenses(
 
 open StateLenses
 
-let state = {email: "fakenickels@brazil.gov.br", age: 0}
+let state = {email: "user@example.com", age: 0}
 
 Console.log(state->get(Email))
 Console.log(state->get(Age))

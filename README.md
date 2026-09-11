@@ -1,23 +1,15 @@
 # lenses-ppx
 
-ReScript PPX that generates GADT field lenses for record types. Useful when you need to compose lenses into lists/arrays (e.g. [reschema](https://github.com/rescriptbr/reschema)).
+Fork of the unmaintained [Astrocoders/lenses-ppx](https://github.com/Astrocoders/lenses-ppx), updated for **ReScript 12 only** (uncurried by default). No compatibility with older compilers.
 
-Compatible with **ReScript 12+** (uncurried by default).
+Generates GADT field lenses for record types — useful when you need to compose lenses into lists/arrays (e.g. [reschema](https://github.com/rescriptbr/reschema)).
 
 ## Install
 
-From npm:
-
-```sh
-npm install --save-dev lenses-ppx@latest
-```
-
-From this git repo (monorepo — point at the PPX package):
+From this git repo (point at the PPX package in the monorepo):
 
 ```sh
 npm install --save-dev github:Freddy03h/lenses-ppx#path:packages/ppx
-# or
-npm install --save-dev git+https://github.com/Freddy03h/lenses-ppx.git#path:packages/ppx
 ```
 
 Add to `rescript.json`:
@@ -66,7 +58,7 @@ module StateLenses = {
 ```rescript
 open StateLenses
 
-let state = {email: "fakenickels@gov.br", age: 969}
+let state = {email: "user@example.com", age: 969}
 
 Console.log(state->get(Email))
 Console.log(state->get(Age))
@@ -89,7 +81,7 @@ Console.log(bartux->bartux_set(Top, 20))
 
 ## Develop
 
-This repo is an npm workspaces monorepo (`packages/ppx`, `packages/demo`).
+npm workspaces monorepo: `packages/ppx`, `packages/demo`.
 
 ```sh
 npm install
@@ -113,7 +105,3 @@ npm run build
 ## Alternatives
 
 - https://github.com/scoville/re-optic/blob/master/docs/lenses-ppx.md — stricter, closer to optics standards
-
-## Background
-
-[GADTs: A primer](https://sketch.sh/s/yH0MJiujNSiofDWOU85loX/)

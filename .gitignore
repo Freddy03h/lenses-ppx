@@ -13,20 +13,13 @@
 *.cma
 *.a
 *.cmxa
-*.obj
 *~
-*.annot
 *.cmj
 *.bak
-lib/bs
 *.mlast
 *.mliast
 .vscode
-.merlin
-.bsb.lock
 node_modules
-/ppx
-_esy
 _build
 _opam
 lenses-ppx.install
@@ -34,3 +27,4 @@ _release
 *.res.js
 .rescript
 lib
+.DS_Store
