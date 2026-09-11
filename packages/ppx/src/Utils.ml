@@ -36,6 +36,12 @@ let expr_func ?(loc = Location.none) ~arity e =
   in
   Exp.construct ~attrs:[ attr_arity ] { txt = Lident "Function$"; loc } (Some e)
 
+(** Mark an application as ReScript uncurried. *)
+let expr_apply ?(loc = Location.none) fn args =
+  let attr_uapp = Attr.mk { txt = "res.uapp"; loc } (PStr []) in
+  Exp.apply ~loc ~attrs:[ attr_uapp ] fn
+    (List.map (fun arg -> (Nolabel, arg)) args)
+
 (** Wrap an arrow type as a ReScript uncurried [function$] type. *)
 let ctyp_arrow ?(loc = Location.none) ~arity ctyp =
   let arity_tag = "Has_arity" ^ string_of_int arity in

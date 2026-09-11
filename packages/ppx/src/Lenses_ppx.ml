@@ -6,23 +6,102 @@ open Utils
 
 let loc = Location.none
 
-let create_set_lens ~type_name ~gadt_field_name ?(prefix = "") ~fields () =
-  let cases =
-    List.map
-      (fun field ->
-        Exp.case
-          (Pat.construct
-             {
-               loc;
-               txt = Lident (String.capitalize_ascii field.pld_name.txt);
-             }
-             None)
-          (Exp.record
-             [ ({ loc; txt = Lident field.pld_name.txt }, [%expr value]) ]
-             (* Spread not needed with a single field — avoids "redundant with" *)
-             (if List.length fields > 1 then Some [%expr values] else None)))
-      fields
+let constructor_name field = String.capitalize_ascii field.pld_name.txt
+
+let array_element_type field =
+  match field.pld_type.ptyp_desc with
+  | Ptyp_constr ({ txt = Lident "array"; _ }, [ inner ]) -> Some inner
+  | _ -> None
+
+let field_lid field = { loc; txt = Lident field.pld_name.txt }
+let field_access field = Exp.field [%expr values] (field_lid field)
+
+let ctor_pat name args = Pat.construct { loc; txt = Lident name } args
+let index_pat () = Some (Pat.var { loc; txt = "index" })
+
+let record_with_field ~fields field value_expr =
+  Exp.record
+    [ (field_lid field, value_expr) ]
+    (* Spread not needed with a single field — avoids "redundant with" *)
+    (if List.length fields > 1 then Some [%expr values] else None)
+
+(* Immutable update: Array.with(array, index, item) *)
+let array_with_expr array_expr item_expr =
+  expr_apply
+    (Exp.ident { loc; txt = Ldot (Lident "Array", "with") })
+    [ array_expr; [%expr index]; item_expr ]
+
+let gadt_constr ~gadt_field_name ~name ~args payload =
+  Type.constructor ~loc:Location.none ~args
+    ~res:
+      (Typ.constr ~loc:Location.none
+         { txt = Lident gadt_field_name; loc = Location.none }
+         [ payload ])
+    { txt = name; loc = Location.none }
+
+let gadt_constructors_for_field ~gadt_field_name field =
+  let name = constructor_name field in
+  let whole =
+    gadt_constr ~gadt_field_name ~name ~args:(Pcstr_tuple []) field.pld_type
   in
+  match array_element_type field with
+  | None -> [ whole ]
+  | Some inner ->
+    [
+      whole;
+      gadt_constr ~gadt_field_name ~name:(name ^ "At")
+        ~args:(Pcstr_tuple [ [%type: int] ])
+        [%type: [%t inner] option];
+      gadt_constr ~gadt_field_name ~name:(name ^ "AtExn")
+        ~args:(Pcstr_tuple [ [%type: int] ])
+        inner;
+    ]
+
+let get_cases_for_field field =
+  let name = constructor_name field in
+  let access = field_access field in
+  let whole = Exp.case (ctor_pat name None) access in
+  match array_element_type field with
+  | None -> [ whole ]
+  | Some _ ->
+    [
+      whole;
+      Exp.case
+        (ctor_pat (name ^ "At") (index_pat ()))
+        (expr_apply [%expr Array.get] [ access; [%expr index] ]);
+      Exp.case
+        (ctor_pat (name ^ "AtExn") (index_pat ()))
+        (expr_apply [%expr Option.getOrThrow]
+           [ expr_apply [%expr Array.get] [ access; [%expr index] ] ]);
+    ]
+
+let set_cases_for_field ~fields field =
+  let name = constructor_name field in
+  let whole =
+    Exp.case (ctor_pat name None) (record_with_field ~fields field [%expr value])
+  in
+  match array_element_type field with
+  | None -> [ whole ]
+  | Some _ ->
+    [
+      whole;
+      Exp.case
+        (ctor_pat (name ^ "At") (index_pat ()))
+        [%expr
+          match value with
+          | Some item ->
+            [%e
+              record_with_field ~fields field
+                (array_with_expr (field_access field) [%expr item])]
+          | None -> values];
+      Exp.case
+        (ctor_pat (name ^ "AtExn") (index_pat ()))
+        (record_with_field ~fields field
+           (array_with_expr (field_access field) [%expr value]));
+    ]
+
+let create_set_lens ~type_name ~gadt_field_name ?(prefix = "") ~fields () =
+  let cases = List.concat_map (set_cases_for_field ~fields) fields in
   let record_type =
     Typ.mk (Ptyp_constr ({ txt = Lident type_name; loc }, []))
   in
@@ -59,19 +138,7 @@ let create_set_lens ~type_name ~gadt_field_name ?(prefix = "") ~fields () =
   [%stri let [%p pat] = fun (type value) -> [%e body]]
 
 let create_get_lens ~type_name ~gadt_field_name ?(prefix = "") ~fields () =
-  let cases =
-    List.map
-      (fun field ->
-        Exp.case
-          (Pat.construct
-             {
-               loc;
-               txt = Lident (String.capitalize_ascii field.pld_name.txt);
-             }
-             None)
-          (Exp.field [%expr values] { loc; txt = Lident field.pld_name.txt }))
-      fields
-  in
+  let cases = List.concat_map get_cases_for_field fields in
   let record_type =
     Typ.mk (Ptyp_constr ({ txt = Lident type_name; loc }, []))
   in
@@ -102,69 +169,16 @@ let create_get_lens ~type_name ~gadt_field_name ?(prefix = "") ~fields () =
   [%stri let [%p pat] = fun (type value) -> [%e body]]
 
 let create_gadt ~gadt_field_name ~fields =
-  {
-    pstr_loc = Location.none;
-    pstr_desc =
-      Pstr_type
-        ( Recursive,
-          [
-            {
-              ptype_loc = Location.none;
-              ptype_attributes = [];
-              ptype_name = { txt = gadt_field_name; loc = Location.none };
-              ptype_params =
-                [
-                  ( {
-                      ptyp_loc_stack = [];
-                      ptyp_desc = Ptyp_any;
-                      ptyp_loc = Location.none;
-                      ptyp_attributes = [];
-                    },
-                    (NoVariance, NoInjectivity) );
-                ];
-              ptype_cstrs = [];
-              ptype_kind =
-                Ptype_variant
-                  (List.map
-                     (fun field ->
-                       {
-                         pcd_loc = Location.none;
-                         pcd_attributes = [];
-                         pcd_name =
-                           {
-                             txt = String.capitalize_ascii field.pld_name.txt;
-                             loc = Location.none;
-                           };
-                         pcd_vars = [];
-                         pcd_args = Pcstr_tuple [];
-                         pcd_res =
-                           Some
-                             {
-                               ptyp_loc_stack = [];
-                               ptyp_loc = Location.none;
-                               ptyp_attributes = [];
-                               ptyp_desc =
-                                 Ptyp_constr
-                                   ( {
-                                       txt = Lident gadt_field_name;
-                                       loc = Location.none;
-                                     },
-                                     [
-                                       {
-                                         ptyp_desc = field.pld_type.ptyp_desc;
-                                         ptyp_loc_stack = [];
-                                         ptyp_loc = Location.none;
-                                         ptyp_attributes = [];
-                                       };
-                                     ] );
-                             };
-                       })
-                     fields);
-              ptype_private = Public;
-              ptype_manifest = None;
-            };
-          ] );
-  }
+  let constructors =
+    List.concat_map (gadt_constructors_for_field ~gadt_field_name) fields
+  in
+  Str.type_ Recursive
+    [
+      Type.mk ~loc:Location.none
+        ~params:[ ([%type: _], (NoVariance, NoInjectivity)) ]
+        ~kind:(Ptype_variant constructors)
+        { txt = gadt_field_name; loc = Location.none };
+    ]
 
 let create_structure_lenses ~type_name ~gadt_field_name ?prefix ~fields () =
   [
