@@ -1,38 +1,27 @@
-# What are GADTs?
-[GADTs: A primer](https://sketch.sh/s/yH0MJiujNSiofDWOU85loX/)
+# lenses-ppx
 
-# Why
-Differently from normal lenses/optics the following approach allows for composing "lenses" into lists/arrays which is them useful for things like https://github.com/rescriptbr/reschema
+ReScript PPX that generates GADT field lenses for record types. Useful when you need to compose lenses into lists/arrays (e.g. [reschema](https://github.com/rescriptbr/reschema)).
 
-# Install
-Install the last stable version
+Compatible with **ReScript 12+** (uncurried by default).
 
-For ReScript
-```
+## Install
+
+```sh
 npm install --save-dev lenses-ppx@latest
-or
+# or
 yarn add lenses-ppx@latest -D
 ```
 
-For BuckleScript < 6
-```
-npm install --save-dev lenses-ppx@4.0.0
-or
-yarn add lenses-ppx@4.0.0 -D
+Add to `rescript.json`:
+
+```json
+{
+  "ppx-flags": ["lenses-ppx/ppx"]
+}
 ```
 
-# Build
-```
-npm run build
-```
+## Usage
 
-# Watch
-
-```
-npm run watch
-```
-
-In
 ```rescript
 module StateLenses = %lenses(
   type state = {
@@ -42,7 +31,7 @@ module StateLenses = %lenses(
 )
 ```
 
-Out
+Expands to roughly:
 
 ```rescript
 module StateLenses = {
@@ -53,36 +42,32 @@ module StateLenses = {
   type rec field<_> =
     | Email: field<string>
     | Age: field<int>
-  let get:
-    type value. (state, field<value>) => value =
-    (state, field) =>
-      switch field {
-      | Email => state.email
-      | Age => state.age
-      }
-  let set:
-    type value. (state, field<value>, value) => state =
-    (state, field, value) =>
-      switch field {
-      | Email => {...state, email: value}
-      | Age => {...state, age: value}
-      }
+  let get: type value. (state, field<value>) => value = (state, field) =>
+    switch field {
+    | Email => state.email
+    | Age => state.age
+    }
+  let set: type value. (state, field<value>, value) => state = (state, field, value) =>
+    switch field {
+    | Email => {...state, email: value}
+    | Age => {...state, age: value}
+    }
 }
 ```
-Using
+
 ```rescript
 open StateLenses
 
 let state = {email: "fakenickels@gov.br", age: 969}
 
-Js.log(state->get(Email))
-Js.log(state->get(Age))
+Console.log(state->get(Email))
+Console.log(state->get(Age))
 ```
 
+Attribute form (generates `bartux_get` / `bartux_set`):
 
-Alternatively you can also use it like
 ```rescript
-@lenses @decco
+@lenses
 type bartux = {
   color: string,
   top: int,
@@ -90,12 +75,33 @@ type bartux = {
 
 let bartux = {color: "red", top: 10}
 
-Js.log(bartux->bartux_get(Color))
-Js.log(bartux->bartux_set(Top, 20))
-Js.log(bartux_encode(bartux))
+Console.log(bartux->bartux_get(Color))
+Console.log(bartux->bartux_set(Top, 20))
 ```
 
+## Develop the PPX
 
-Alternatives
+Requires [opam](https://opam.ocaml.org/) and OCaml 4.14.2:
 
-- https://github.com/scoville/re-optic/blob/master/docs/lenses-ppx.md which is more strict and follows more closely Optics standards
+```sh
+cd packages/ppx
+opam switch create . 4.14.2 --deps-only -y
+eval $(opam env)
+dune build
+```
+
+Then build the demo:
+
+```sh
+cd packages/demo
+npm install
+npm run build
+```
+
+## Alternatives
+
+- https://github.com/scoville/re-optic/blob/master/docs/lenses-ppx.md — stricter, closer to optics standards
+
+## Background
+
+[GADTs: A primer](https://sketch.sh/s/yH0MJiujNSiofDWOU85loX/)

@@ -1,2 +1,12 @@
 _build
-_esy
+_opam
+src
+bin
+test
+dune
+dune-project
+dune-workspace
+lenses-ppx.opam
+*.ml
+*.mli
+*.re

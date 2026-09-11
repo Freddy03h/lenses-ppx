@@ -2,59 +2,38 @@ name: Test build
 
 on:
   push:
-    branches-ignore:
-      - master
+  pull_request:
 
 jobs:
-  build_linux:
+  build-ppx:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        node_version: [14]
-
-    container:
-      image: cichocinski/docker-esy:alpine3.8
+        os: [ubuntu-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2-beta
+      - uses: actions/checkout@v4
+
+      - uses: ocaml/setup-ocaml@v3
         with:
-          node-version: ${{ matrix.node_version }}
+          ocaml-compiler: 4.14.2
 
-      - run: esy install
+      - name: Install PPX dependencies
         working-directory: packages/ppx
+        run: opam install . --deps-only -y
 
-      - run: esy release-static
+      - name: Build PPX
         working-directory: packages/ppx
+        run: opam exec -- dune build
 
-      - uses: actions/upload-artifact@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          name: ${{ matrix.os }}
-          path: packages/ppx/_build/default/bin/bin.exe
+          node-version: "22"
 
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        node_version: [14]
-        os: [macOS-latest, windows-latest]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions/setup-node@v2-beta
-        with:
-          node-version: ${{ matrix.node_version }}
-          
-      - run: npm i -g esy
-      - run: esy install
-        working-directory: packages/ppx
-
-      - run: esy build
-        working-directory: packages/ppx
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.os }}
-          path: packages/ppx/_build/default/bin/bin.exe
+      - name: Build demo
+        working-directory: packages/demo
+        run: |
+          npm install
+          npm run build

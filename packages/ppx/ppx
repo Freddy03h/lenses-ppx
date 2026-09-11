@@ -1,0 +1,48 @@
+#!/usr/bin/env sh
+
+# Get the directory of the script to work from.
+DIR=$(dirname "$0")
+
+if [ -f "$DIR/_build/default/bin/bin.exe" ]; then
+  # Use the local dune build
+  "$DIR/_build/default/bin/bin.exe" "$@"
+  exit $?
+fi
+
+OS=$(uname -s)
+ARCH=$(uname -m)
+
+case "$OS" in
+  Darwin)
+    case "$ARCH" in
+      x86_64|amd64)
+        "$DIR/ppx-osx-x64.exe" "$@"
+        ;;
+      arm64|aarch64)
+        "$DIR/ppx-osx-arm64.exe" "$@"
+        ;;
+      *)
+        echo "No release available for '$OS-$ARCH'"
+        exit 1
+        ;;
+    esac
+    ;;
+  Linux*)
+    case "$ARCH" in
+      x86_64|amd64)
+        "$DIR/ppx-linux-x64.exe" "$@"
+        ;;
+      arm64|aarch64)
+        "$DIR/ppx-linux-arm64.exe" "$@"
+        ;;
+      *)
+        echo "No release available for '$OS-$ARCH'"
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "No release available for '$OS'"
+    exit 1
+    ;;
+esac
