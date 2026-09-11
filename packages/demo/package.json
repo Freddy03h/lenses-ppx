@@ -1,20 +1,19 @@
 {
   "name": "demo",
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "clean": "bsb -clean-world",
-    "build": "bsb -make-world",
-    "watch": "bsb -make-world -w"
+    "clean": "rescript clean",
+    "build": "rescript",
+    "watch": "rescript watch"
   },
   "keywords": [
-    "BuckleScript"
+    "ReScript"
   ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "bs-platform": "9"
-  },
-  "dependencies": {
-    "decco": "^1.3.0"
+    "lenses-ppx": "file:../ppx",
+    "rescript": "^12.0.0"
   }
 }

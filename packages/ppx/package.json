@@ -1,10 +1,34 @@
 {
   "name": "lenses-ppx",
-  "version": "6.1.10",
+  "version": "7.0.0",
+  "description": "ReScript PPX that generates GADT lenses for record types",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Astrocoders/lenses-ppx.git"
+  },
+  "keywords": [
+    "ReScript",
+    "ppx",
+    "lenses",
+    "GADT"
+  ],
   "scripts": {
-    "build": "esy build",
-    "dev:rewriter": "ocamlfind ppx_tools/rewriter _build/default/bin/bin.exe test/Test.ml",
-    "dev:dumpast": "ocamlfind ppx_tools/dumpast test/Wanted.ml",
-    "postinstall": "node postinstall.js"
+    "postinstall": "node postinstall.js",
+    "build": "dune build",
+    "build:static": "dune build --profile static"
+  },
+  "files": [
+    "/postinstall.js",
+    "/ppx",
+    "/ppx.cmd",
+    "/ppx-linux-x64.exe",
+    "/ppx-linux-arm64.exe",
+    "/ppx-osx-x64.exe",
+    "/ppx-osx-arm64.exe",
+    "/ppx-windows.exe"
+  ],
+  "peerDependencies": {
+    "rescript": ">=12.0.0"
   }
 }

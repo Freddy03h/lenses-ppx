@@ -1,0 +1,21 @@
+opam-version: "2.0"
+name: "lenses-ppx"
+version: "7.0.0"
+synopsis: "ReScript PPX that generates GADT lenses for record types"
+description: """
+ReScript PPX that generates GADT field accessors (get/set) for record types.
+"""
+maintainer: "Freddy <freddy@example.com>"
+authors: "Astrocoders"
+license: "MIT"
+homepage: "https://github.com/Astrocoders/lenses-ppx"
+bug-reports: "https://github.com/Astrocoders/lenses-ppx/issues"
+dev-repo: "git+https://github.com/Astrocoders/lenses-ppx.git"
+depends: [
+  "ocaml" {>= "4.14.0" & <= "4.14.2"}
+  "dune" {>= "2.8"}
+  "ppxlib" {= "0.28.0"}
+]
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+]
