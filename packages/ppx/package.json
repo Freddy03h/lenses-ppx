@@ -1,6 +1,6 @@
 {
   "name": "@freddy03h/lenses-ppx",
-  "version": "7.0.0-alpha.1",
+  "version": "7.0.0",
   "description": "ReScript 12 PPX that generates GADT lenses for record types",
   "license": "MIT",
   "repository": {

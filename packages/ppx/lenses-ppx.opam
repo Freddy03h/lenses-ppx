@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "lenses-ppx"
-version: "7.0.0-alpha.1"
+version: "7.0.0"
 synopsis: "ReScript PPX that generates GADT lenses for record types"
 description: """
 ReScript 12+ PPX that generates GADT field accessors (get/set) for record types.
