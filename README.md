@@ -6,10 +6,18 @@ Compatible with **ReScript 12+** (uncurried by default).
 
 ## Install
 
+From npm:
+
 ```sh
 npm install --save-dev lenses-ppx@latest
+```
+
+From this git repo (monorepo — point at the PPX package):
+
+```sh
+npm install --save-dev github:Freddy03h/lenses-ppx#path:packages/ppx
 # or
-yarn add lenses-ppx@latest -D
+npm install --save-dev git+https://github.com/Freddy03h/lenses-ppx.git#path:packages/ppx
 ```
 
 Add to `rescript.json`:
@@ -79,9 +87,15 @@ Console.log(bartux->bartux_get(Color))
 Console.log(bartux->bartux_set(Top, 20))
 ```
 
-## Develop the PPX
+## Develop
 
-Requires [opam](https://opam.ocaml.org/) and OCaml 4.14.2:
+This repo is an npm workspaces monorepo (`packages/ppx`, `packages/demo`).
+
+```sh
+npm install
+```
+
+Build the PPX (requires [opam](https://opam.ocaml.org/) and OCaml 4.14.2):
 
 ```sh
 cd packages/ppx
@@ -90,11 +104,9 @@ eval $(opam env)
 dune build
 ```
 
-Then build the demo:
+Build the demo from the repo root:
 
 ```sh
-cd packages/demo
-npm install
 npm run build
 ```
 
