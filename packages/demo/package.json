@@ -13,7 +13,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "lenses-ppx": "*",
+    "@freddy03h/lenses-ppx": "*",
     "rescript": "^12.0.0"
   }
 }

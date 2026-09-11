@@ -1,22 +1,20 @@
-# lenses-ppx
+# @freddy03h/lenses-ppx
 
-Fork of the unmaintained [Astrocoders/lenses-ppx](https://github.com/Astrocoders/lenses-ppx), updated for **ReScript 12 only** (uncurried by default). No compatibility with older compilers.
+Maintained fork of the unmaintained [Astrocoders/lenses-ppx](https://github.com/Astrocoders/lenses-ppx), updated for **ReScript 12 only** (uncurried by default). No compatibility with older compilers.
 
 Generates GADT field lenses for record types — useful when you need to compose lenses into lists/arrays (e.g. [reschema](https://github.com/rescriptbr/reschema)).
 
 ## Install
 
-From this git repo (point at the PPX package in the monorepo):
-
 ```sh
-npm install --save-dev github:Freddy03h/lenses-ppx#path:packages/ppx
+npm install --save-dev @freddy03h/lenses-ppx
 ```
 
 Add to `rescript.json`:
 
 ```json
 {
-  "ppx-flags": ["lenses-ppx/ppx"]
+  "ppx-flags": ["@freddy03h/lenses-ppx/ppx"]
 }
 ```
 

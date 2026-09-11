@@ -7,6 +7,9 @@ on:
         description: "Optional tag name"
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -51,6 +54,9 @@ jobs:
   release:
     needs: [build-linux, build-macos]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -69,11 +75,15 @@ jobs:
           node-version: "22"
           registry-url: https://registry.npmjs.org/
 
+      # Trusted publishing needs npm >= 11.5.1
+      - name: Ensure npm supports OIDC
+        run: npm install -g npm@^11.5.1
+
       - name: Pack and publish
         working-directory: packages/ppx
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
         run: |
           cp ../../artifacts/ppx-osx-arm64.exe .
           cp ../../artifacts/ppx-linux-x64.exe .
+          # Do not set NODE_AUTH_TOKEN — OIDC trusted publisher authenticates publish.
+          # Provenance is generated automatically with trusted publishing.
           npm publish --access public

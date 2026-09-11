@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "build": "npm run build -w demo",
-    "build:ppx": "npm run build -w lenses-ppx",
+    "build:ppx": "npm run build -w @freddy03h/lenses-ppx",
     "watch": "npm run watch -w demo",
     "clean": "npm run clean -w demo"
   },
