@@ -25,6 +25,7 @@ module StateLenses = %lenses(
   type state = {
     email: string,
     age: int,
+    hobbies: array<string>,
   }
 )
 ```
@@ -36,30 +37,48 @@ module StateLenses = {
   type state = {
     email: string,
     age: int,
+    hobbies: array<string>,
   }
   type rec field<_> =
     | Email: field<string>
     | Age: field<int>
+    | Hobbies: field<array<string>>
+    | HobbiesAt(int): field<option<string>>
+    | HobbiesAtExn(int): field<string>
   let get: type value. (state, field<value>) => value = (state, field) =>
     switch field {
     | Email => state.email
     | Age => state.age
+    | Hobbies => state.hobbies
+    | HobbiesAt(index) => state.hobbies->Array.get(index)
+    | HobbiesAtExn(index) => state.hobbies->Array.get(index)->Option.getOrThrow
     }
   let set: type value. (state, field<value>, value) => state = (state, field, value) =>
     switch field {
     | Email => {...state, email: value}
     | Age => {...state, age: value}
+    | Hobbies => {...state, hobbies: value}
+    | HobbiesAt(index) =>
+      switch value {
+      | Some(item) => {...state, hobbies: state.hobbies->Array.with(index, item)}
+      | None => state
+      }
+    | HobbiesAtExn(index) => {...state, hobbies: state.hobbies->Array.with(index, value)}
     }
 }
 ```
 
+Array fields also get `*At` (safe, `option`) and `*AtExn` (throws if the index is out of range). `set` copies the array (`Array.with`) instead of mutating it.
+
 ```rescript
 open StateLenses
 
-let state = {email: "user@example.com", age: 969}
+let state = {email: "user@example.com", age: 969, hobbies: ["foo", "bar"]}
 
 Console.log(state->get(Email))
 Console.log(state->get(Age))
+Console.log(state->get(HobbiesAt(1))) // Some("bar")
+Console.log(state->get(HobbiesAtExn(0))) // "foo"
 ```
 
 Attribute form (generates `bartux_get` / `bartux_set`):
