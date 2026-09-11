@@ -2,10 +2,6 @@ name: npm-publish
 
 on:
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: "Optional tag name"
-        required: false
 
 permissions:
   contents: read
@@ -13,17 +9,26 @@ permissions:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+    # ocaml/opam images default to user `opam` (uid 1000), which cannot write
+    # runner temp files (uid 1001) → EACCES in actions/checkout cleanup.
     container:
       image: ocaml/opam:alpine-3.20-ocaml-4.14
+      options: --user root
     steps:
       - uses: actions/checkout@v4
 
+      - name: Fix workspace ownership for opam user
+        run: chown -R opam:opam "$GITHUB_WORKSPACE"
+
       - name: Install dependencies and build static binary
-        working-directory: packages/ppx
         run: |
-          opam install . --deps-only -y
-          opam exec -- dune build --profile static
-          cp _build/default/bin/bin.exe "$GITHUB_WORKSPACE/ppx-linux-x64.exe"
+          su opam -c "
+            cd '$GITHUB_WORKSPACE/packages/ppx'
+            opam install . --deps-only -y
+            opam exec -- dune build --profile static
+          "
+          cp "$GITHUB_WORKSPACE/packages/ppx/_build/default/bin/bin.exe" \
+            "$GITHUB_WORKSPACE/ppx-linux-x64.exe"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -72,7 +77,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: https://registry.npmjs.org/
 
       # Trusted publishing needs npm >= 11.5.1

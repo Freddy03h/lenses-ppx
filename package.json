@@ -12,6 +12,6 @@
     "clean": "npm run clean -w demo"
   },
   "engines": {
-    "node": ">=20.11.0"
+    "node": ">=22.14.0"
   }
 }
