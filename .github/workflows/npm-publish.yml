@@ -9,26 +9,24 @@ permissions:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    # ocaml/opam images default to user `opam` (uid 1000), which cannot write
-    # runner temp files (uid 1001) → EACCES in actions/checkout cleanup.
-    container:
-      image: ocaml/opam:alpine-3.20-ocaml-4.14
-      options: --user root
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fix workspace ownership for opam user
-        run: chown -R opam:opam "$GITHUB_WORKSPACE"
-
+      # Job-level `container:` + ocaml/opam hits uid/shell issues with Actions.
+      # Build inside Docker from the host runner instead (static Alpine binary).
       - name: Install dependencies and build static binary
         run: |
-          su opam -c "
-            cd '$GITHUB_WORKSPACE/packages/ppx'
-            opam install . --deps-only -y
-            opam exec -- dune build --profile static
-          "
-          cp "$GITHUB_WORKSPACE/packages/ppx/_build/default/bin/bin.exe" \
-            "$GITHUB_WORKSPACE/ppx-linux-x64.exe"
+          # Host workspace is uid 1001; container user opam is 1000 and must write _build.
+          chmod -R a+rwX packages/ppx
+
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/work" \
+            --workdir /work/packages/ppx \
+            ocaml/opam:alpine-3.20-ocaml-4.14 \
+            sh -lc 'opam install . --deps-only -y && opam exec -- dune build --profile static'
+
+          sudo cp packages/ppx/_build/default/bin/bin.exe ppx-linux-x64.exe
+          sudo chown "$(id -u):$(id -g)" ppx-linux-x64.exe
 
       - uses: actions/upload-artifact@v4
         with:
