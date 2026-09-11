@@ -1,6 +1,1 @@
 (lang dune 2.8)
-
-(env
- (static
-  (flags
-   (:standard -ccopt -static))))

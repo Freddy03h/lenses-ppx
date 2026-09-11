@@ -2,4 +2,14 @@
  (package lenses-ppx)
  (name bin)
  (public_name lenses-ppx)
- (libraries lenses-ppx))
+ (libraries lenses-ppx)
+ (enabled_if (<> %{profile} static)))
+
+(executable
+ (package lenses-ppx)
+ (name bin)
+ (public_name lenses-ppx)
+ (libraries lenses-ppx)
+ (link_flags
+  (:standard -ccopt -static))
+ (enabled_if (= %{profile} static)))
