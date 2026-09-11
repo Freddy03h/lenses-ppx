@@ -1,18 +1,43 @@
+const path = require("path");
 const fs = require("fs");
 
-const { platform } = process;
-if (!fs.existsSync(platform)) {
-  throw new Error(platform + " lenses-ppx binary not found");
-}
+const installMacLinuxBinary = (binary) => {
+  const source = path.join(__dirname, binary);
+  if (fs.existsSync(source)) {
+    const target = path.join(__dirname, "ppx");
+    fs.renameSync(source, target);
+    fs.chmodSync(target, 0o777);
+  }
+};
 
-/**
- * Windows needs two ppx files for some reason
- * One extra with *.exe suffix
- */
-if (platform === "win32") {
-  fs.copyFileSync("win32", "ppx.exe");
-  fs.chmodSync("ppx.exe", 0o744);
-}
+const installWindowsBinary = () => {
+  const source = path.join(__dirname, "ppx-windows.exe");
+  if (fs.existsSync(source)) {
+    const target = path.join(__dirname, "ppx.exe");
+    fs.renameSync(source, target);
 
-fs.renameSync(platform, "ppx");
-fs.chmodSync("ppx", 0o744);
+    const windowsScript = path.join(__dirname, "ppx.cmd");
+    if (fs.existsSync(windowsScript)) {
+      fs.unlinkSync(windowsScript);
+    }
+  }
+};
+
+switch (process.platform) {
+  case "linux":
+    installMacLinuxBinary(
+      process.arch === "arm64" ? "ppx-linux-arm64.exe" : "ppx-linux-x64.exe"
+    );
+    break;
+  case "darwin":
+    installMacLinuxBinary(
+      process.arch === "arm64" ? "ppx-osx-arm64.exe" : "ppx-osx-x64.exe"
+    );
+    break;
+  case "win32":
+    installWindowsBinary();
+    break;
+  default:
+    console.warn(`No release available for "${process.platform}"`);
+    process.exit(1);
+}
